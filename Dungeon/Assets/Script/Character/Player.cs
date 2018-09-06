@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
@@ -18,7 +19,13 @@ public class Player : ARPGCharacterBase<Player.BehaviourState>
         Damage,
         Dead
     }
+    [Header("スプライト切り替え")]
+    [SerializeField] private List<MultipleSpriteAnimator> _spriteAnimator;
 
+    [SerializeField] private Animator _animator;
+    private ARPGCharactorAnimator<BehaviourState> _animation = new ARPGCharactorAnimator<BehaviourState>();
+
+    //パラメーター
     private float _moveSpeed = 2.5f;
 
     float _attackRange = 1;
@@ -39,19 +46,49 @@ public class Player : ARPGCharacterBase<Player.BehaviourState>
 
     int _coin = 0;
 
+    private string[] SpritePath =
+    {
+        "Image/Player/Head/img_human_hair_{0:00}",
+        "Image/Player/Body/img_human_body_{0:00}",
+        "Image/Player/Head/img_human_hair_{0:00}",
+        "Image/Player/Head/img_human_hair_{0:00}",
+    };
     void Start()
     {
+        
         InitParam();
+        InitSprite();
+        InitAnimation();
         TouchManager.Instance?.OnTouchBegin?.AddListener(TouchBegin);
         TouchManager.Instance?.OnTouchMove?.AddListener(TouchBegin);
+    }
+    
+    void InitAnimation()
+    {
+        _animation.Init(_animator,this);
+    }
+    void InitSprite()
+    {
+        for (var i = 0; i < SpritePath.Length; i++)
+        {
+            if (_spriteAnimator.CheckIndex(i))
+            {
+                //Debug.Log(String.Format(SpritePath[i], 0));
+                _spriteAnimator[i].Init("",String.Format(SpritePath[i],1));
+            }
+        }
+
     }
     void InitParam(){
         _Speed = 1;
     }
-	private void Update()
+	protected void Update()
 	{
         AimToTouch();
         MoveToAim(1.5f + (float)_Speed / 10f);
+	    CalcDirection();
+	    CalcState();
+
 	}
     void AimToTouch(){
         _moveTo = _touchPos;
@@ -62,4 +99,17 @@ public class Player : ARPGCharacterBase<Player.BehaviourState>
         }
     }
 
+    void CalcState()
+    {
+        BehaviourState b = CurrentBehaviourState;
+        if (_rigidbody.velocity.magnitude > 0.01f)
+        {
+            b = BehaviourState.Walk;
+        }
+        else
+        {
+            b = BehaviourState.Wait;
+        }
+        CurrentBehaviourState = b;
+    }
 }

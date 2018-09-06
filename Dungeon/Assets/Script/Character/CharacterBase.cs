@@ -22,7 +22,7 @@ public abstract class ARPGCharacterBase<T> : MonoBehaviour where T : struct
     protected T                     _behaviourState;                            //動きのステート 
     protected DirectionState        _directionState         = 0;                //現在の向きステート 0 左 1 上 2 右 3 下
     protected GameObject            _target;
-    Rigidbody2D                     _rigidbody;
+    protected Rigidbody2D           _rigidbody;
     protected Vector2               _moveTo                 = new Vector2(0, 0);
     protected float                 _targetRange            = 0.2f;             //近接判定 ターゲットからの半径距離 これ以上は近づかない
 
@@ -37,7 +37,7 @@ public abstract class ARPGCharacterBase<T> : MonoBehaviour where T : struct
         }
         set
         {
-            if (value.Equals(_behaviourState))
+            if (!value.Equals(_behaviourState))
             {
                 _behaviourState = value;
                 OnChangeBehaviourState.Invoke(value);
@@ -86,6 +86,39 @@ public abstract class ARPGCharacterBase<T> : MonoBehaviour where T : struct
         }
         _rigidbody.velocity = _distance.normalized * speed;
     }
+
+    public void CalcDirection()
+    {
+        if (_rigidbody.velocity.magnitude > 0.01f)
+        {
+            DirectionState d = _directionState;
+            Vector2 v = _rigidbody.velocity;
+            if ( Mathf.Abs(v.x) > Mathf.Abs(v.y))
+            {
+                if (v.x < 0)
+                {
+                    d = DirectionState.Left;
+                }
+                else
+                {
+                    d = DirectionState.Right;
+                }
+            }
+            else
+            {
+                if (v.y > 0)
+                {
+                    d = DirectionState.Up;
+                }
+                else
+                {
+                    d = DirectionState.Down;
+                }
+            }
+            CurrentDirectionState = d;
+        }
+    }
+
     protected virtual void Awake()
     {
         _rigidbody = GetComponent<Rigidbody2D>();

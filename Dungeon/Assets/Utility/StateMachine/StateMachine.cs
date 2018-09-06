@@ -27,7 +27,7 @@ public class Statemachine<T> : IStatemachine where T : struct
         }
         set
         {
-            Debug.Log("ClearNest Count:" + _nestStack.Count);
+           // Debug.Log("ClearNest Count:" + _nestStack.Count);
             _nestStack.Clear();
             _currentFunc = value;
         }
@@ -50,13 +50,14 @@ public class Statemachine<T> : IStatemachine where T : struct
                                                BindingFlags.NonPublic |
                                                BindingFlags.Instance |
                                                BindingFlags.Static |
-                                               BindingFlags.DeclaredOnly);
-
+                                               BindingFlags.DeclaredOnly, null, CallingConventions.Any, new Type[0],null);
+            
             if (method != null)
             {
-               
+               // Debug.Log(method.Name);
                 _stateList.Add(state, method);
             }
+            
         }
         _isNewState = true;
 #if UNITY_EDITOR
@@ -97,11 +98,21 @@ public class Statemachine<T> : IStatemachine where T : struct
             if (result)
             {
                 _nestStack.Push(func);
-                var nested = func.Current as IEnumerator;
-                if (nested != null)
+                var current = func.Current;
+                var instruction = current as CustomYieldInstruction;
+                if (instruction != null)
                 {
+                    _nestStack.Push(WaitCustomYieldInstruction(instruction));
+                }else if (current is IEnumerator)
+                {
+                    var nested = func.Current as IEnumerator;
                     return Nest(nested);
+                }else if (current is YieldInstruction)
+                {
+                    Debug.LogWarning("YieldInstruction not supported");
                 }
+               
+                
             }
             else{
                 if (_nestStack.Count > 0)
@@ -110,10 +121,18 @@ public class Statemachine<T> : IStatemachine where T : struct
                 }
             }
             _currentResult = result;
-            Debug.Log(func.ToString() + "," + result);
+            //Debug.Log(func.ToString() + "," + result);
             return result;
         }
         return false;
+    }
+    private static IEnumerator WaitCustomYieldInstruction(CustomYieldInstruction instruction)
+    {
+        while (instruction.keepWaiting)
+        {
+            
+            yield return null;
+        }
     }
     public bool Update(){
 
