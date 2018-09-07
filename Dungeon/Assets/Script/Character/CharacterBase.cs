@@ -6,8 +6,9 @@ using UnityEngine.Events;
 /// <summary>
 /// ターゲットを取り、移動するタイプ
 /// </summary>
-[RequireComponent(typeof(Rigidbody2D))]
-public abstract class ARPGCharacterBase<T> : MonoBehaviour where T : struct
+
+[RequireComponent(typeof(Collider2D))]
+public abstract class ARPGCharacterBase<T> : MovableBase where T : struct
 {
     public enum DirectionState
     {
@@ -21,14 +22,10 @@ public abstract class ARPGCharacterBase<T> : MonoBehaviour where T : struct
 
     protected T                     _behaviourState;                            //動きのステート 
     protected DirectionState        _directionState         = 0;                //現在の向きステート 0 左 1 上 2 右 3 下
-    protected GameObject            _target;
-    protected Rigidbody2D           _rigidbody;
-    protected Vector2               _moveTo                 = new Vector2(0, 0);
-    protected float                 _targetRange            = 0.2f;             //近接判定 ターゲットからの半径距離 これ以上は近づかない
 
-    public    Vector2               KnockBack { get; set; } 
+
     //public (protected) functions
-
+    //[SerializeField] private Collider2D _hitCollider;//攻撃との判定
     protected T CurrentBehaviourState
     {
         get
@@ -68,31 +65,15 @@ public abstract class ARPGCharacterBase<T> : MonoBehaviour where T : struct
     public DirectionEvent OnChangeDirectionState = new DirectionEvent();
     [NonSerialized]
     public BehaviourEvent OnChangeBehaviourState = new BehaviourEvent();
-    protected void AimToTarget()
-    {
-        if (_target == null)
-        {
-            return;
-        }
-        _moveTo = new Vector2(_target.transform.position.x,_target.transform.position.y);
-    }
-    protected void MoveToAim(float speed){
-       
-        Vector2 _distance = _moveTo - (Vector2)transform.position;
-        if (_distance.magnitude < _targetRange)
-        {
-            _rigidbody.velocity = Vector2.zero;
-            return;
-        }
-        _rigidbody.velocity = _distance.normalized * speed;
-    }
+
+
 
     public void CalcDirection()
     {
-        if (_rigidbody.velocity.magnitude > 0.01f)
+        if (Velocity.magnitude > 0.01f)
         {
             DirectionState d = _directionState;
-            Vector2 v = _rigidbody.velocity;
+            Vector2 v = Velocity;
             if ( Mathf.Abs(v.x) > Mathf.Abs(v.y))
             {
                 if (v.x < 0)
@@ -118,9 +99,71 @@ public abstract class ARPGCharacterBase<T> : MonoBehaviour where T : struct
             CurrentDirectionState = d;
         }
     }
+   
 
+    protected virtual void OnTriggerStay2D(Collider2D c)
+    {
+
+    }
+
+    
+
+}
+[RequireComponent(typeof(Rigidbody2D))]
+public class MovableBase : MonoBehaviour
+{
+    protected GameObject _target;
+
+    protected Vector2 _moveTo = new Vector2(0, 0);
+    protected float _targetRange = 0.2f;             //近接判定 ターゲットからの半径距離 これ以上は近づかない
+
+    protected Rigidbody2D _rigidbody;
+
+    public bool IsNotKnockBack { get; set; }
+    public Vector2 Power { get; set; }//勢い
+    public Vector2 KnockBack { get; set; }
+
+    public Vector2 Velocity { get; set; }
     protected virtual void Awake()
     {
         _rigidbody = GetComponent<Rigidbody2D>();
     }
+    protected void AimToTarget()
+    {
+        if (_target == null)
+        {
+            return;
+        }
+        _moveTo = new Vector2(_target.transform.position.x, _target.transform.position.y);
+    }
+    protected void MoveToAim(float speed)
+    {
+
+        Vector2 _distance = _moveTo - (Vector2)transform.position;
+        if (_distance.magnitude < _targetRange)
+        {
+            Velocity = Vector2.zero;
+            return;
+        }
+        Velocity = _distance.normalized * speed;
+    }
+    //ふっとび
+    public void CalcKnockBack(MovableBase b)
+    {
+        KnockBack += b.Power;
+    }
+ 
+    //ぶつかっただけ
+    public void CalcCollision(MovableBase b)
+    {
+        //KnockBack 
+    }
+    /// <summary>
+    /// rigidbodyにVelocity流し込み
+    /// </summary>
+    public void CalcVelocity()
+    {
+        _rigidbody.velocity = Velocity + KnockBack;
+    }
+
 }

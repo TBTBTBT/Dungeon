@@ -49,9 +49,9 @@ public class Player : ARPGCharacterBase<Player.BehaviourState>
     private string[] SpritePath =
     {
         "Image/Player/Head/img_human_hair_{0:00}",
+        "Image/Player/Face/img_human_face_{0:00}",
         "Image/Player/Body/img_human_body_{0:00}",
-        "Image/Player/Head/img_human_hair_{0:00}",
-        "Image/Player/Head/img_human_hair_{0:00}",
+        "Image/Player/Leg/img_human_leg_{0:00}",
     };
     void Start()
     {
@@ -111,5 +111,12 @@ public class Player : ARPGCharacterBase<Player.BehaviourState>
             b = BehaviourState.Wait;
         }
         CurrentBehaviourState = b;
+    }
+    protected override void OnTriggerStay2D(Collider2D c)
+    {
+        if (c.tag == "Enemy")
+        {
+            //if(c.GetComponent<>())
+        }
     }
 }
