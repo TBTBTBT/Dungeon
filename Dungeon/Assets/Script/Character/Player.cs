@@ -87,8 +87,8 @@ public class Player : ARPGCharacterBase<Player.BehaviourState>
         AimToTouch();
         MoveToAim(1.5f + (float)_Speed / 10f);
 	    CalcDirection();
-	    CalcState();
-
+	    CalcState();//ステートを更新@アニメーションも
+        CalcVelocity();//rigidbodyに流しこみ
 	}
     void AimToTouch(){
         _moveTo = _touchPos;
